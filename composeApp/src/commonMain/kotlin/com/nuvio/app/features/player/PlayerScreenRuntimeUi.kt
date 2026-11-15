@@ -7,10 +7,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
@@ -310,6 +316,28 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
             modifier = panelModifier,
         )
         Box(modifier = videoModifier) {
+            val showNetworkSpeedBadge = initialLoadCompleted &&
+                errorMessage == null &&
+                !isInPip &&
+                !showParentalGuide &&
+                !(playerSettingsUiState.useLegacyPlayerLayout && controlsVisible)
+
+            AnimatedVisibility(
+                visible = showNetworkSpeedBadge,
+                enter = fadeIn(animationSpec = tween(durationMillis = 220)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 180)),
+                modifier = Modifier
+                    .align(AbsoluteAlignment.TopLeft)
+                    .windowInsetsPadding(WindowInsets.safeContent.only(WindowInsetsSides.Top))
+                    .padding(
+                        left = horizontalSafePadding + metrics.horizontalPadding,
+                        top = metrics.verticalPadding / 4,
+                    ),
+            ) {
+                PlayerNetworkSpeedBadge(
+                    bytesPerSecond = playbackSnapshot.cacheSpeedBytesPerSec,
+                )
+            }
             RenderPlaybackOverlays(
                 runtime = runtime,
                 displayedPositionMs = displayedPositionMs,
