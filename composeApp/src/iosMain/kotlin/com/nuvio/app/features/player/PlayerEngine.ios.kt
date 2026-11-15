@@ -58,8 +58,8 @@ actual fun PlatformPlayerSurface(
     initialPositionMs: Long?,
     initialPositionRequestKey: String?,
     resizeMode: PlayerResizeMode,
-    playbackEngine: AndroidPlaybackEngine?,
-    useNativeController: Boolean,
+    playbackEngine: AndroidPlaybackEngine? = null,
+    useNativeController: Boolean = false,
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
@@ -373,6 +373,12 @@ actual fun PlatformPlayerSurface(
     LaunchedEffect(bridge) {
         var lastReportedError: String? = null
         while (isActive) {
+            val cacheSpeedBytesPerSec = bridge.getProperty("cache-speed")
+                .trim()
+                .toDoubleOrNull()
+                ?.toLong()
+                ?.coerceAtLeast(0L)
+                ?: 0L
             val snapshot = PlayerPlaybackSnapshot(
                 isLoading = bridge.getIsLoading(),
                 isOpening = bridge.getIsOpening(),
@@ -382,6 +388,7 @@ actual fun PlatformPlayerSurface(
                 positionMs = bridge.getPositionMs(),
                 bufferedPositionMs = bridge.getBufferedMs(),
                 playbackSpeed = bridge.getPlaybackSpeed(),
+                cacheSpeedBytesPerSec = cacheSpeedBytesPerSec,
             )
             latestOnSnapshot.value(snapshot)
             val errorMessage = bridge.getErrorMessage().ifBlank { null }
