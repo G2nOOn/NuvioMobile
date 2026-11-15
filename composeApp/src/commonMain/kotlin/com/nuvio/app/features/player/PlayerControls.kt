@@ -1050,3 +1050,61 @@ private fun PlayerActionPillButton(
         )
     }
 }
+
+@Composable
+internal fun PlayerNetworkSpeedBadge(
+    bytesPerSecond: Long,
+    modifier: Modifier = Modifier,
+) {
+    val safeSpeed = bytesPerSecond.coerceAtLeast(0L)
+    val (speedText, indicatorColor) = remember(safeSpeed) {
+        when {
+            safeSpeed >= 1_048_576L -> {
+                val tenths = kotlin.math.round((safeSpeed / 1_048_576.0) * 10.0).toLong()
+                "${tenths / 10L}.${tenths % 10L} MB/s" to Color(0xFF4ADE80)
+            }
+            safeSpeed >= 102_400L -> {
+                "${safeSpeed / 1024L} KB/s" to Color(0xFFFACC15)
+            }
+            safeSpeed > 0L -> {
+                "${(safeSpeed / 1024L).coerceAtLeast(1L)} KB/s" to Color(0xFFF87171)
+            }
+            else -> {
+                "0 KB/s" to Color.White.copy(alpha = 0.55f)
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = modifier
+                .clip(RoundedCornerShape(50))
+                .background(Color.Black.copy(alpha = 0.48f))
+                .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "↓",
+                style = MaterialTheme.nuvioTypeScale.labelSm.copy(
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                color = indicatorColor,
+            )
+            Text(
+                text = speedText,
+                style = MaterialTheme.nuvioTypeScale.labelSm.copy(
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+                color = Color.White.copy(alpha = 0.92f),
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+    }
+}
