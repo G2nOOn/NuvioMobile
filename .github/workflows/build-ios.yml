@@ -22,13 +22,11 @@ jobs:
 
       - name: Build iOS App (Unsigned)
         run: |
-          # الانتقال لمسار بناء مشروع الآيفون أو تنفيذيّة Gradle/Xcode حسب هيكلة CMP
-          # إذا كان المشروع يحتوي على سكربت تجميع مباشر أو عبر xcodebuild للمجلد الداخلي:
-          cd iosApp || cd ios # حسب المجلد الموجود في مشروعك إن وجد، أو بناء مشروع Compose المخصص للآيفون
+          # الانتقال إلى مجلد iosApp حيث يوجد مشروع الـ Xcode
+          cd iosApp
           
-          # بناء ملف التطبيق غير الموقّع
-          xcodebuild -workspace NuvioMobile.xcworkspace \
-            -scheme NuvioMobile \
+          xcodebuild -project iosApp.xcodeproj \
+            -scheme iosApp \
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -39,7 +37,6 @@ jobs:
       - name: Package into IPA
         run: |
           mkdir Payload
-          # تأكد من مسار ملف .app الناتج من مجلد البناء السحابي
           cp -r iosApp/build/Build/Products/Release-iphoneos/*.app Payload/
           zip -r Nuvio-Unsigned.ipa Payload
 
