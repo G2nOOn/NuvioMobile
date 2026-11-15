@@ -3,14 +3,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-ipa:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
 
-      - uses: actions/setup-java@v4
+      - name: Init iOS submodule (MPVKit only)
+        run: git submodule update --init MPVKit
+
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
