@@ -7,8 +7,8 @@ workflows:
       java: 17
       xcode: latest
     scripts:
-      - name: Initialize Git Submodules
-        script: git submodule update --init --recursive
+      - name: Initialize MPVKit Submodule
+        script: git submodule update --init --recursive MPVKit
       - name: Grant gradlew permission
         script: chmod +x gradlew
       - name: Install CocoaPods
