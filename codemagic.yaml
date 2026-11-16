@@ -20,14 +20,28 @@ workflows:
           fi
       - name: Build Unsigned Archive
         script: |
+          set -o pipefail
+          if [ -n "$ANDROID_SDK_ROOT" ]; then
+            echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          elif [ -d "$HOME/Library/Android/sdk" ]; then
+            echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties
+          fi
           WORKSPACE=$(find . -maxdepth 2 -name "*.xcworkspace" | grep -v "project.xcworkspace" | head -n 1)
           PROJECT=$(find . -maxdepth 2 -name "*.xcodeproj" | head -n 1)
           if [ -n "$WORKSPACE" ]; then
             SCHEME=$(basename "$WORKSPACE" .xcworkspace)
-            xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -sdk iphoneos -archivePath build/App.xcarchive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive
+            xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release -sdk iphoneos -archivePath build/App.xcarchive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_USER_SCRIPT_SANDBOXING=NO archive | tee xcodebuild.log || {
+              echo "=== EXACT KOTLIN/GRADLE ERROR ==="
+              grep -B 3 -A 25 -E "FAILURE:|What went wrong:|Execution failed for task|e: file:|error:" xcodebuild.log | tail -n 60
+              exit 1
+            }
           else
             SCHEME=$(basename "$PROJECT" .xcodeproj)
-            xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release -sdk iphoneos -archivePath build/App.xcarchive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO archive
+            xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release -sdk iphoneos -archivePath build/App.xcarchive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO ENABLE_USER_SCRIPT_SANDBOXING=NO archive | tee xcodebuild.log || {
+              echo "=== EXACT KOTLIN/GRADLE ERROR ==="
+              grep -B 3 -A 25 -E "FAILURE:|What went wrong:|Execution failed for task|e: file:|error:" xcodebuild.log | tail -n 60
+              exit 1
+            }
           fi
       - name: Package IPA
         script: |
