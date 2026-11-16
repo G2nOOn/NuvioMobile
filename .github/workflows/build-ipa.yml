@@ -1,0 +1,71 @@
+name: Build Unsigned KMP IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Install CocoaPods (if Podfile exists)
+        run: |
+          if [ -f "iosApp/Podfile" ]; then
+            cd iosApp && pod install && cd ..
+          elif [ -f "ios/Podfile" ]; then
+            cd ios && pod install && cd ..
+          fi
+
+      - name: Build Unsigned Archive
+        run: |
+          # البحث التلقائي عن مجلد وملف مشروع iOS سواء كان iosApp أو ios
+          WORKSPACE=$(find . -maxdepth 2 -name "*.xcworkspace" | grep -v "project.xcworkspace" | head -n 1)
+          PROJECT=$(find . -maxdepth 2 -name "*.xcodeproj" | head -n 1)
+
+          if [ -n "$WORKSPACE" ]; then
+            SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+            xcodebuild -workspace "$WORKSPACE" \
+              -scheme "$SCHEME" \
+              -configuration Release \
+              -sdk iphoneos \
+              -archivePath build/App.xcarchive \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              archive
+          else
+            SCHEME=$(basename "$PROJECT" .xcodeproj)
+            xcodebuild -project "$PROJECT" \
+              -scheme "$SCHEME" \
+              -configuration Release \
+              -sdk iphoneos \
+              -archivePath build/App.xcarchive \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGNING_ALLOWED=NO \
+              archive
+          fi
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/App.xcarchive/Products/Applications/*.app Payload/
+          zip -r NuvioMobile.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: NuvioMobile-IPA
+          path: NuvioMobile.ipa
